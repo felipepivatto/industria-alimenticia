@@ -91,9 +91,3 @@ kanban-crud/
    ```
    http://localhost/kanban-crud/public/
    ```
-
-## 👨‍🏫 Autor e Orientação
-**Aluno:** [Seu Nome]  
-**Curso:** Técnico em Desenvolvimento de Sistemas  
-**Unidade:** Unidade de Desenvolvimento de Sistemas  
-**Professor:** Ícaro Botelho  
