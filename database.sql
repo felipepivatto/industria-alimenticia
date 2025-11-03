@@ -7,7 +7,8 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(150) NOT NULL,
-  email VARCHAR(150) NOT NULL UNIQUE
+  email VARCHAR(150) NOT NULL UNIQUE,
+  senha VARCHAR(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE tasks (
@@ -20,12 +21,3 @@ CREATE TABLE tasks (
   status ENUM('a fazer','fazendo','pronto') NOT NULL DEFAULT 'a fazer',
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO users (nome, email) VALUES
-('João Silva','joao@example.com'),
-('Maria Souza','maria@example.com');
-
-INSERT INTO tasks (user_id, descricao, setor, prioridade, status) VALUES
-(1,'Limpar linha de produção A','Produção','alta','a fazer'),
-(2,'Revisar registro de validade','Qualidade','media','fazendo'),
-(1,'Atualizar planilha de controle','Administração','baixa','pronto');

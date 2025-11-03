@@ -1,13 +1,18 @@
 <?php
 require 'config.php';
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
 $conn = db_connect();
-
-$users = [];
-$res = $conn->query("SELECT id, nome FROM users ORDER BY nome");
-while ($r = $res->fetch_assoc()) $users[$r['id']] = $r['nome'];
+$user_id = $_SESSION['user_id'];
 
 $tasks = ['a fazer' => [], 'fazendo' => [], 'pronto' => []];
-$res = $conn->query("SELECT t.*, u.nome as usuario FROM tasks t JOIN users u ON u.id = t.user_id ORDER BY t.data_cadastro DESC");
+$stmt = $conn->prepare("SELECT t.*, u.nome as usuario FROM tasks t JOIN users u ON u.id = t.user_id WHERE t.user_id = ? ORDER BY t.data_cadastro DESC");
+$stmt->bind_param('i', $user_id);
+$stmt->execute();
+$res = $stmt->get_result();
 while ($r = $res->fetch_assoc()) {
     $tasks[$r['status']][] = $r;
 }
@@ -18,16 +23,17 @@ while ($r = $res->fetch_assoc()) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Industria Alimentícia</title>
+    <title> Industria Alimentícia</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body>
     <header>
-        <h1>Industria Alimentícia</h1>
+        <h1>Gerenciamento de Tarefas</h1>
         <nav>
-            <a href="user_create.php">Cadastrar usuário</a> |
-            <a href="create.php">Cadastrar tarefa</a>
+            Olá, <?= htmlspecialchars($_SESSION['user_name']) ?> |
+            <a href="create.php">Nova tarefa</a> |
+            <a href="logout.php">Logout</a>
         </nav>
     </header>
     <main>

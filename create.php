@@ -1,45 +1,44 @@
 <?php
 require 'config.php';
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
 $conn = db_connect();
 $msg = '';
-
-$users = [];
-$res = $conn->query("SELECT id,nome FROM users ORDER BY nome");
-while ($r = $res->fetch_assoc()) $users[$r['id']] = $r['nome'];
-
-$id = $_GET['id'] ?? null;
+$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $editing = false;
-$data = ['user_id' => '', 'descricao' => '', 'setor' => '', 'prioridade' => 'baixa'];
+$data = ['descricao' => '', 'setor' => '', 'prioridade' => 'baixa'];
 if ($id) {
     $editing = true;
-    $stmt = $conn->prepare('SELECT * FROM tasks WHERE id=?');
-    $stmt->bind_param('i', $id);
+    $stmt = $conn->prepare('SELECT * FROM tasks WHERE id=? AND user_id=? LIMIT 1');
+    $stmt->bind_param('ii', $id, $_SESSION['user_id']);
     $stmt->execute();
     $res = $stmt->get_result();
-    $row = $res->fetch_assoc();
-    if ($row) $data = $row;
+    if ($row = $res->fetch_assoc()) $data = $row;
+    else {
+        header('Location: index.php');
+        exit;
+    }
 }
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $user_id = $_POST['user_id'] ?? '';
     $descricao = trim($_POST['descricao'] ?? '');
     $setor = trim($_POST['setor'] ?? '');
     $prioridade = $_POST['prioridade'] ?? 'baixa';
-    if ($user_id === '' || $descricao === '' || $setor === '') $msg = 'Preencha todos os campos.';
+    if ($descricao === '' || $setor === '') $msg = 'Preencha todos os campos.';
     else {
         if ($editing) {
-            $stmt = $conn->prepare('UPDATE tasks SET user_id=?, descricao=?, setor=?, prioridade=? WHERE id=?');
-            $stmt->bind_param('isssi', $user_id, $descricao, $setor, $prioridade, $id);
+            $stmt = $conn->prepare('UPDATE tasks SET descricao=?, setor=?, prioridade=? WHERE id=? AND user_id=?');
+            $stmt->bind_param('sssii', $descricao, $setor, $prioridade, $id, $_SESSION['user_id']);
             if ($stmt->execute()) {
-                $msg = 'cadastro concluído com sucesso';
                 header('Location: index.php');
                 exit;
             } else $msg = 'Erro: ' . $stmt->error;
         } else {
             $stmt = $conn->prepare('INSERT INTO tasks (user_id,descricao,setor,prioridade) VALUES (?,?,?,?)');
-            $stmt->bind_param('isss', $user_id, $descricao, $setor, $prioridade);
+            $stmt->bind_param('isss', $_SESSION['user_id'], $descricao, $setor, $prioridade);
             if ($stmt->execute()) {
-                $msg = 'cadastro concluído com sucesso';
                 header('Location: index.php');
                 exit;
             } else $msg = 'Erro: ' . $stmt->error;
@@ -63,20 +62,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </header>
     <main>
         <?php if ($msg): ?><div class="alert"><?= htmlspecialchars($msg) ?></div><?php endif; ?>
-        <form method="post" action="" class="form">
-            <label>Usuário
-                <select name="user_id" required>
-                    <option value="">-- selecione --</option>
-                    <?php foreach ($users as $uid => $uname): ?>
-                        <option value="<?= $uid ?>" <?= ($data['user_id'] == $uid) ? 'selected' : '' ?>><?= htmlspecialchars($uname) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
+        <form method="post" action="" class="form" id="taskForm">
             <label>Descrição
-                <textarea name="descricao" required><?= htmlspecialchars($data['descricao'] ?? '') ?></textarea>
+                <textarea name="descricao" id="descricao" required><?= htmlspecialchars($data['descricao'] ?? '') ?></textarea>
             </label>
+            <button type="button" id="suggestBtn">Sugerir descrição (API)</button>
             <label>Setor
-                <input type="text" name="setor" required value="<?= htmlspecialchars($data['setor'] ?? '') ?>">
+                <input type="text" name="setor" id="setor" required value="<?= htmlspecialchars($data['setor'] ?? '') ?>">
             </label>
             <label>Prioridade
                 <select name="prioridade" required>
@@ -87,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </label>
             <button type="submit"><?= $editing ? 'Atualizar' : 'Cadastrar' ?></button>
         </form>
+        <script src="js/api_fetch.js"></script>
     </main>
 </body>
 

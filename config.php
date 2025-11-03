@@ -13,3 +13,18 @@ function db_connect()
     $conn->set_charset('utf8mb4');
     return $conn;
 }
+
+function is_logged()
+{
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    return isset($_SESSION['user_id']);
+}
+
+function require_login()
+{
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: login.php');
+        exit;
+    }
+}
